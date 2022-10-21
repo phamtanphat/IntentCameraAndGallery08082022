@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     Button btnCamera, btnGallery;
     ImageView img;
     int REQUEST_CODE_CAMERA = 1;
+    int REQUEST_CODE_GALLERY = 2;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,6 +59,32 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        btnGallery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED
+                ) {
+                    if (!shouldShowRequestPermissionRationale(Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                        requestPermissions(
+                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                                REQUEST_CODE_GALLERY
+                        );
+                    } else {
+                        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                        Uri uri = Uri.fromParts("package", getPackageName(), null);
+                        intent.setData(uri);
+                        startActivity(intent);
+                    }
+
+                } else {
+                    Intent intent = new Intent(Intent.ACTION_PICK);
+                    intent.setType("image/*");
+                    galleryLauncher.launch(intent);
+                }
+            }
+        });
     }
 
     @Override
@@ -66,6 +93,12 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_CODE_CAMERA && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
             cameraLauncher.launch(intent);
+        }
+
+        if (requestCode == REQUEST_CODE_GALLERY && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            Intent intent = new Intent(Intent.ACTION_PICK);
+            intent.setType("image/*");
+            galleryLauncher.launch(intent);
         }
     }
 
@@ -77,6 +110,19 @@ public class MainActivity extends AppCompatActivity {
                     if (result.getResultCode() == RESULT_OK) {
                         Bitmap imageBitmap = (Bitmap) result.getData().getExtras().get("data");
                         img.setImageBitmap(imageBitmap);
+                    }
+                }
+            }
+    );
+
+    private ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            new ActivityResultCallback<ActivityResult>() {
+                @Override
+                public void onActivityResult(ActivityResult result) {
+                    if (result.getResultCode() == RESULT_OK) {
+                        Uri uri = result.getData().getData();
+                        img.setImageURI(uri);
                     }
                 }
             }
